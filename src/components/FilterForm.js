@@ -30,7 +30,6 @@ const FilterForm = (props) => {
                 </div>
             </div>
 
-
             <form>
                 {formData.map((item, index) => {
                     return (

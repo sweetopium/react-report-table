@@ -8,7 +8,6 @@ import LineChart from './components/LineChart'
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import Highcharts from 'highcharts'
 
-// eslint-disable-next-line import/no-webpack-loader-syntax
 import worker from './app.worker.js';
 import WebWorker from './WebWorker';
 
@@ -87,7 +86,7 @@ class App extends React.Component {
     }
 
     componentDidMount() {
-        this.worker = new WebWorker(worker, {type:"module"});
+        this.worker = new WebWorker(worker);
         this.handleChartData(this.state.tableData);
 
     }
@@ -133,8 +132,8 @@ class App extends React.Component {
 
     handleGroup(){
         this.setState({isLoading: true}, () => {
-            this.worker.postMessage(this.state.tableData);
-            this.worker.addEventListener('message', (event) => {
+            this.worker.postMessage({data: this.state.tableData, taskType: 'groupData'});
+            this.worker.addEventListener('message', event => {
                 this.setState({
                     tableData: event.data,
                     tableColumns: ['city', 'installs', 'trials', 'conversions'],
