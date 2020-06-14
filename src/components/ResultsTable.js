@@ -5,24 +5,22 @@ const ResultsTable = (props) => {
         <table className="table table-bordered">
             <thead className="thead-dark">
             <tr>
-                <td onClick={() => props.sortTable('state')}>State</td>
-                <td onClick={() => props.sortTable('city')}>City</td>
-                <td onClick={() => props.sortTable('date')}>Date</td>
-                <td onClick={() => props.sortTable('installs')}>Installs</td>
-                <td onClick={() => props.sortTable('trials')}>Trials</td>
-                <td onClick={() => props.sortTable('date')}>Conversions</td>
+                {props.tableColumns.map(column => {return (
+                    <td onClick={() => props.sortTable(column)}>{column}</td>
+                )})}
             </tr>
             </thead>
             <tbody>
             {props.tableData.map((item, index) => {
                 return (
                     <tr key={index}>
-                        <td>{item.state}</td>
-                        <td>{item.city}</td>
-                        <td>{item.date}</td>
-                        <td>{item.installs}</td>
-                        <td>{item.trials}</td>
-                        <td>{((item.trials / item.installs) * 100).toFixed(1)}%</td>
+                        {props.tableColumns.map(column => {
+                            if(column === 'conversions') {
+                                return (<td>{((item.trials / item.installs) * 100).toFixed(1)}%</td>)
+                            } else {
+                                return (<td>{item[column]}</td>)
+                            }
+                        })}
                     </tr>
                 )
             })}

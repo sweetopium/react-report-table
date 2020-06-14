@@ -23,6 +23,7 @@ class App extends React.Component {
             chartData: null,
             isLoading: false,
             filtrationParams: ['state', 'date', 'city', 'installs', 'trials'],
+            tableColumns: ['state', 'date', 'city', 'installs', 'trials', 'conversions'],
             isFiltered: false,
             isGrouped: false,
             options: {
@@ -153,7 +154,10 @@ class App extends React.Component {
             const data = this.state.tableData;
             this.setState({tableData: this.groupData(data)}, () => {
                 setTimeout(() => {
-                this.setState({isLoading: false})
+                this.setState({
+                    tableColumns: ['city', 'installs', 'trials', 'conversions'],
+                    isLoading: false
+                })
             }, 1000)
             })
         });
@@ -177,6 +181,17 @@ class App extends React.Component {
             order = !order
         }
         if (order) {
+            if(param === 'conversions'){
+                data.sort((a, b) => {
+                    if ((a.trials / a.installs) < (b.trials / b.installs)) {
+                        return -1;
+                    }
+                    if ((a.trials / a.installs) > (b.trials / b.installs)) {
+                        return 1;
+                    }
+                    return 0;
+                    })
+            }
             data.sort((a, b) => {
                 if (a[param] < b[param]) {
                     return -1;
@@ -187,6 +202,17 @@ class App extends React.Component {
                 return 0;
             });
         } else {
+            if(param === 'conversions'){
+                data.sort((a, b) => {
+                    if ((a.trials / a.installs) < (b.trials / b.installs)) {
+                        return 1;
+                    }
+                    if ((a.trials / a.installs) > (b.trials / b.installs)) {
+                        return -1;
+                    }
+                    return 0;
+                    })
+            }
             data.sort((a, b) => {
                 if (a[param] < b[param]) {
                     return 1;
@@ -201,7 +227,7 @@ class App extends React.Component {
     }
 
     render() {
-        const {tableData, isLoading, filtrationParams, chartData, options, isFiltered} = this.state;
+        const {tableData, isLoading, filtrationParams, chartData, options, isFiltered, tableColumns} = this.state;
         return (
             <div className="container-fluid mt-4">
                 <h3>Статистика установки приложения</h3>
@@ -211,13 +237,16 @@ class App extends React.Component {
                     : null
                 }
 
-                <FilterForm onSubmitForm={this.submitForm} onGroupClick={this.handleGroup}
+                <FilterForm
+                    onSubmitForm={this.submitForm}
+                            onGroupClick={this.handleGroup}
                             filtrParams={filtrationParams} isFiltered={isFiltered}/>
                 <div className="row mt-3">
                     {!isLoading
                         ?
                         <div className="col">
-                            <ResultsTable sortTable={this.sortTable} tableData={tableData}/>
+                            <ResultsTable  tableColumns={tableColumns}
+                                sortTable={this.sortTable} tableData={tableData}/>
                         </div>
                         :
                         <div className="col text-center">

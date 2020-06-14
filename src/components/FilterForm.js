@@ -66,7 +66,7 @@ const FilterForm = (props) => {
                                onClick={() => props.onSubmitForm(formData)}>применить фильтр</a>
                             {props.isFiltered ?
                             <a className="btn btn-secondary text-white ml-3" onClick={() => props.onGroupClick()}>
-                                Группировать по городу</a>
+                                группировать по городу</a>
                                 :null
                             }
                         </div>
