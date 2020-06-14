@@ -6,9 +6,8 @@ import FilterForm from './components/FilterForm'
 import ResultsTable from './components/ResultsTable'
 import LineChart from './components/LineChart'
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
-
 import Highcharts from 'highcharts'
-import HighchartsReact from 'highcharts-react-official'
+
 
 
 class App extends React.Component {
@@ -16,6 +15,7 @@ class App extends React.Component {
         super(props);
         this.submitForm = this.submitForm.bind(this);
         this.sortTable = this.sortTable.bind(this);
+        this.handleGroup = this.handleGroup.bind(this);
         this.state = {
             sortParam: undefined,
             sortOrder: false,
@@ -23,11 +23,23 @@ class App extends React.Component {
             chartData: null,
             isLoading: false,
             filtrationParams: ['state', 'date', 'city', 'installs', 'trials'],
+            isFiltered: false,
+            isGrouped: false,
             options: {
                 title: {
                     text: 'Установки / триалы'
                 },
                 chart: {type: 'line'},
+                yAxis: [
+                    {
+                        min: 0
+                    },
+                    {
+                        min: 0,
+                        opposite: true,
+                        zIndex: 10,
+                    }
+                ],
                 xAxis: {
                     categories: [],
                     type: 'datetime',
@@ -38,8 +50,8 @@ class App extends React.Component {
                     },
                 },
                 series: [
-                    {data: null, name: 'Installs', color: '#28a745'},
-                    {data: null, name: 'Trials', color: '#007bff'},
+                    {data: null, yAxis: 0, name: 'Installs', color: '#28a745'},
+                    {data: null,yAxis: 1, name: 'Trials', color: '#007bff'},
                 ]
             }
         }
@@ -51,7 +63,6 @@ class App extends React.Component {
         let trialsList = [];
         let chartCategories = [];
         let f = R.groupBy(R.prop('date'), data);
-        console.log(f)
         Object.keys(f).forEach(item => {
             let localInstalls = 0;
             let localTrials = 0;
@@ -80,21 +91,22 @@ class App extends React.Component {
     submitForm(formData) {
         let params = {};
         formData.forEach(p => {
-            isNaN(parseInt(p.filtrationValue))
-                ? params[p.filtrationParam] = p.filtrationValue
-                : params[p.filtrationParam] = parseInt(p.filtrationValue)
+            if (p.filtrationParam === 'installs' || p.filtrationParam === 'trials') {
+                params[p.filtrationParam] = parseInt(p.filtrationValue)
+            } else {
+                params[p.filtrationParam] = p.filtrationValue
+            }
         });
-        console.log(params)
         this.filterData(params)
     }
 
     createFilterFn(params) {
-        const {filter, where, equals, gte, lt} = R;
+        const {filter, where, equals, gte, gt, lte, and} = R;
         let state = typeof params.state !== "undefined" ? {state: equals(params.state)} : null;
         let city = typeof params.city !== "undefined" ? {city: equals(params.city)} : null;
-        let date = typeof params.date !== "undefined" ? {date: gte(params.date)} : null;
-        let installs = typeof params.installs !== "undefined" ? {installs: equals(params.installs)} : null;
-        let trials = typeof params.trials !== "undefined" ? {trials: equals(params.trials)} : null;
+        let date = typeof params.date !== "undefined" ? {date: and(gt(params.date[0]), gte(params.date[1]))} : null;
+        let installs = typeof params.installs !== "undefined" ? {installs: lte(params.installs)} : null;
+        let trials = typeof params.trials !== "undefined" ? {trials: lte(params.trials)} : null;
         let conditions = {};
         if (state !== null) {
             conditions['state'] = state['state']
@@ -111,8 +123,40 @@ class App extends React.Component {
         if (trials !== null) {
             conditions['trials'] = trials['trials']
         }
-        console.log(conditions)
+        console.log(conditions);
         return filter(where(conditions))
+    }
+
+    groupData(data){
+        let reducedData = [];
+        let grouped = R.groupBy(R.prop('city'), data);
+        Object.keys(grouped).forEach(item => {
+            let localInstalls = 0;
+            let localTrials = 0;
+            grouped[item].forEach(e => {
+                localInstalls = localInstalls + e.installs;
+                localTrials = localTrials + e.trials;
+            });
+            let localConversions = (localTrials / localInstalls) * 100;
+            reducedData.push({
+                city: item,
+                installs: localInstalls,
+                trials: localTrials,
+                conversions: Number(localConversions.toFixed(1))
+            })
+        });
+        return reducedData;
+    }
+
+    handleGroup(){
+        this.setState({isLoading: true}, () => {
+            const data = this.state.tableData;
+            this.setState({tableData: this.groupData(data)}, () => {
+                setTimeout(() => {
+                this.setState({isLoading: false})
+            }, 1000)
+            })
+        });
     }
 
     filterData(params) {
@@ -121,7 +165,7 @@ class App extends React.Component {
             let data = TableData;
             this.setState({tableData: fn(data)}, () => {
                 this.handleChartData(fn(data));
-                this.setState({isLoading: false})
+                this.setState({isLoading: false, isFiltered: true})
             });
         })
     }
@@ -157,7 +201,7 @@ class App extends React.Component {
     }
 
     render() {
-        const {tableData, isLoading, filtrationParams, chartData, options} = this.state;
+        const {tableData, isLoading, filtrationParams, chartData, options, isFiltered} = this.state;
         return (
             <div className="container-fluid mt-4">
                 <h3>Статистика установки приложения</h3>
@@ -167,10 +211,11 @@ class App extends React.Component {
                     : null
                 }
 
-
-                <FilterForm onSubmitForm={this.submitForm} filtrationParams={filtrationParams}/>
+                <FilterForm onSubmitForm={this.submitForm} onGroupClick={this.handleGroup}
+                            filtrParams={filtrationParams} isFiltered={isFiltered}/>
                 <div className="row mt-3">
-                    {!isLoading ?
+                    {!isLoading
+                        ?
                         <div className="col">
                             <ResultsTable sortTable={this.sortTable} tableData={tableData}/>
                         </div>

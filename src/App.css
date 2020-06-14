@@ -4,3 +4,31 @@ thead tr td {
 thead tr td:hover {
     background: rgba(0,0,0,.075);
 }
+.chart-wrapper {
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    margin: 10px 15px;
+}
+.react-daterange-picker{
+    min-width: calc(48% - 2px);
+    margin-right: 15px;
+    margin-left: 13px;
+}
+.react-daterange-picker__wrapper {
+    border: thin solid #ced4db !important;
+    border-radius: 4px;
+    padding: 0 13px;
+    color: #495057;
+}
+.react-daterange-picker__inputGroup__input {
+    color: #495057;
+}
+.react-daterange-picker__inputGroup {
+    text-align: left;
+}
+.react-daterange-picker__inputGroup:nth-of-type(2){
+    text-align: right;
+}
+.react-daterange-picker__button {
+    display: none;
+}
