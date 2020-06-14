@@ -8,7 +8,9 @@ import LineChart from './components/LineChart'
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import Highcharts from 'highcharts'
 
-
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import worker from './app.worker.js';
+import WebWorker from './WebWorker';
 
 class App extends React.Component {
     constructor(props) {
@@ -84,7 +86,8 @@ class App extends React.Component {
         this.setState({chartData: chartData, options: chartOptions})
     }
 
-    async componentDidMount() {
+    componentDidMount() {
+        this.worker = new WebWorker(worker, {type:"module"});
         this.handleChartData(this.state.tableData);
 
     }
@@ -128,39 +131,17 @@ class App extends React.Component {
         return filter(where(conditions))
     }
 
-    groupData(data){
-        let reducedData = [];
-        let grouped = R.groupBy(R.prop('city'), data);
-        Object.keys(grouped).forEach(item => {
-            let localInstalls = 0;
-            let localTrials = 0;
-            grouped[item].forEach(e => {
-                localInstalls = localInstalls + e.installs;
-                localTrials = localTrials + e.trials;
-            });
-            let localConversions = (localTrials / localInstalls) * 100;
-            reducedData.push({
-                city: item,
-                installs: localInstalls,
-                trials: localTrials,
-                conversions: Number(localConversions.toFixed(1))
-            })
-        });
-        return reducedData;
-    }
-
     handleGroup(){
         this.setState({isLoading: true}, () => {
-            const data = this.state.tableData;
-            this.setState({tableData: this.groupData(data)}, () => {
-                setTimeout(() => {
+            this.worker.postMessage(this.state.tableData);
+            this.worker.addEventListener('message', (event) => {
                 this.setState({
+                    tableData: event.data,
                     tableColumns: ['city', 'installs', 'trials', 'conversions'],
                     isLoading: false
                 })
-            }, 1000)
             })
-        });
+        })
     }
 
     filterData(params) {
@@ -249,7 +230,7 @@ class App extends React.Component {
                                 sortTable={this.sortTable} tableData={tableData}/>
                         </div>
                         :
-                        <div className="col text-center">
+                        <div className="col text-center data-preloader">
                             <p>Загрузка... </p>
                         </div>
                     }
