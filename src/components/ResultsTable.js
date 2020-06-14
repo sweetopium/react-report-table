@@ -6,7 +6,7 @@ const ResultsTable = (props) => {
             <thead className="thead-dark">
             <tr>
                 {props.tableColumns.map(column => {return (
-                    <td onClick={() => props.sortTable(column)}>{column}</td>
+                    <td key={column} onClick={() => props.sortTable(column)}>{column}</td>
                 )})}
             </tr>
             </thead>
@@ -16,9 +16,10 @@ const ResultsTable = (props) => {
                     <tr key={index}>
                         {props.tableColumns.map(column => {
                             if(column === 'conversions') {
-                                return (<td>{((item.trials / item.installs) * 100).toFixed(1)}%</td>)
+                                return (<td key={column}
+                                >{((item.trials / item.installs) * 100).toFixed(1)}%</td>)
                             } else {
-                                return (<td>{item[column]}</td>)
+                                return (<td  key={column}>{item[column]}</td>)
                             }
                         })}
                     </tr>
